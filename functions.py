@@ -59,6 +59,15 @@ def generate_waypoints(start, goal, step_size_km):
     return waypoints
 
 
+
+def find_first_red_zone_point(path, redzones):
+    for point in path:
+        for zone in redzones:
+            if haversine(point[0], point[1], zone["lat"], zone["lon"]) <= zone["radius"] / 1000:  # radius in km
+                return point, zone  # Return the first point in the red zone and the red zone details
+    return None, None
+
+
 def find_middle_red_zone_point(path, redzones):
     middle_red_zone_point = None
     middle_red_zone_details = None  # To store lat, lon, radius of the red zone
@@ -108,7 +117,7 @@ def plot_path(path, drone_location, qr_code_location, redzones,point_right_or_le
     # Plot the drone and target
     ax.plot(drone_location["lon"], drone_location["lat"], marker='o', markersize=10, color='blue', label='Drone')
     ax.plot(qr_code_location["lon"], qr_code_location["lat"], marker='x', markersize=10, color='green', label='Target')
-    ax.plot(point_right_or_left[1], point_right_or_left[0], marker='o', markersize=10, color='yellow', label='Right')
+    ax.plot(point_right_or_left[1], point_right_or_left[0], marker='o', markersize=10, color='yellow', label='Middle Point')
     
     # Plot the path
     path_lons = [point[1] for point in path]
@@ -196,3 +205,10 @@ def generate_complete_path(drone_location, middle_point, target_location, step_s
         complete_path = path_to_middle[:-1] + path_to_target
         
         return complete_path
+
+
+def path_is_clear_of_red_zones(path, redzones):
+    for point in path:
+        if in_red_zone(point[0], point[1], redzones):
+            return False
+    return True
