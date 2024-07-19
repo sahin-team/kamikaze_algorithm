@@ -16,7 +16,7 @@ def haversine(lat1, lon1, lat2, lon2):
 
 def in_red_zone(lat, lon, redzones):
     for zone in redzones:
-        if haversine(lat, lon, zone["lat"], zone["lon"]) <= zone["radius"] / 1000:  # radius in km
+        if haversine(lat, lon, zone["lat"], zone["lon"]) <= (zone["radius"] +20)/ 1000:  # radius in km
             return True
     return False
 
@@ -59,11 +59,10 @@ def generate_waypoints(start, goal, step_size_km):
     return waypoints
 
 
-
 def find_first_red_zone_point(path, redzones):
     for point in path:
         for zone in redzones:
-            if haversine(point[0], point[1], zone["lat"], zone["lon"]) <= zone["radius"] / 1000:  # radius in km
+            if haversine(point[0], point[1], zone["lat"], zone["lon"]) <= (zone["radius"] +20) / 1000:  # radius in km
                 return point, zone  # Return the first point in the red zone and the red zone details
     return None, None
 
@@ -82,7 +81,7 @@ def find_middle_red_zone_point(path, redzones):
                 current_red_zone = zone  # Store the current red zone details
                 break
         
-        # print(f"Point: {point}, In red zone: {is_in_red_zone}")
+        print(f"Point: {point}, In red zone: {is_in_red_zone}")
 
         if is_in_red_zone:
             if enter_red_zone_index == -1:
@@ -186,29 +185,62 @@ def get_points_around_middle_point(middle_point, red_zone_radius,redzones):
         return point_right
 
 
-def generate_complete_path(drone_location, middle_point, target_location, step_size_km):
-        # Generate path from drone location to middle point
-        path_to_middle = generate_waypoints(
-            (drone_location["lat"], drone_location["lon"]),
+def generate_complete_path(drone_location, middle_points, target_location, step_size_km):
+    complete_path = []
+
+    # Start from the drone location
+    current_location = (drone_location["lat"], drone_location["lon"])
+
+    for middle_point in middle_points:
+        # Generate path to the current middle point
+        path_segment = generate_waypoints(
+            current_location,
             (middle_point[0], middle_point[1]),
             step_size_km
         )
         
-        # Generate path from middle point to target location
-        path_to_target = generate_waypoints(
-            (middle_point[0], middle_point[1]),
-            (target_location["lat"], target_location["lon"]),
-            step_size_km
-        )
+        # Add to the complete path, excluding the last point to avoid duplicates
+        complete_path += path_segment[:-1]
         
-        # Combine both paths, removing the duplicate middle point
-        complete_path = path_to_middle[:-1] + path_to_target
-        
-        return complete_path
+        # Update the current location
+        current_location = (middle_point[0], middle_point[1])
+
+    # Generate the final segment from the last middle point to the target location
+    final_segment = generate_waypoints(
+        current_location,
+        (target_location["lat"], target_location["lon"]),
+        step_size_km
+    )
+    
+    # Add the final segment to the complete path
+    complete_path += final_segment
+
+    return complete_path
+
 
 
 def path_is_clear_of_red_zones(path, redzones):
     for point in path:
         if in_red_zone(point[0], point[1], redzones):
+            # print(f"Point {point} is in a red zonexxxxxxxxxxxxxxxxxxmust return false")
             return False
+        else:
+            pass
+            # print(f"Point {point} is not in a red zone")
     return True
+
+
+def find_point_after_redzone_with_n_points(path, redzones, n):
+    last_red_zone_index = -1
+    
+    # Find the last red zone point index
+    for i, point in enumerate(path):
+        if in_red_zone(point[0], point[1], redzones):
+            last_red_zone_index = i
+    
+    # Check if we have found a red zone point and if there are enough points after it
+    if last_red_zone_index == -1 or last_red_zone_index + n >= len(path):
+        return None  # No red zone found or not enough points after the red zone
+    
+    # Return the point after the last red zone with n subsequent points
+    return path[last_red_zone_index + n]
