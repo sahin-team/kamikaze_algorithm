@@ -2,7 +2,7 @@ import math
 
 from matplotlib import pyplot as plt
 from matplotlib.patches import Circle
-from functions import generate_waypoints, haversine, in_red_zone, meters_to_degrees
+from functions import generate_waypoints, haversine, in_red_zone, meters_to_degrees, path_is_clear_of_red_zones
 
 
 def calculate_bearing(lat1, lon1, lat2, lon2):
@@ -52,19 +52,6 @@ def point_with_bearing(lat, lon, distance, bearing):
 
     return new_lat, new_lon
 
-
-def get_points_around_middle_point1(middle_point, red_zone_radius,redzones,current_bearing):
-    lat = middle_point["lat"]
-    lon = middle_point["lon"]
-    
-    # Calculate points to the right (bearing 90 degrees) and left (bearing 270 degrees) of the middle point
-    point_right = point_with_bearing(lat, lon, red_zone_radius+50, current_bearing + 90)
-    point_left = point_with_bearing(lat, lon, red_zone_radius+50, current_bearing - 90)
-    
-    if in_red_zone(point_right[0], point_right[1], redzones):
-        return point_left
-    else:
-        return point_right
 
 def plot_path_with_two_points(path, drone_location, qr_code_location, redzones,point_right,point_left):
     fig, ax = plt.subplots()
@@ -119,7 +106,7 @@ def get_points_around_middle_point2(middle_point, red_zone_radius,redzones,curre
     lat = middle_point["lat"]
     lon = middle_point["lon"]
     
-    dist = 18.5 + 70
+    dist = 18.5 + 50
     # Calculate points to the right (bearing 90 degrees) and left (bearing 270 degrees) of the middle point
     point_right = point_with_bearing(lat, lon, red_zone_radius+dist, current_bearing + 90)
     point_left = point_with_bearing(lat, lon, red_zone_radius+dist, current_bearing - 90)
@@ -185,3 +172,44 @@ def get_preferred_and_alternative_points(reference_point, point_right, point_lef
     print(f"From get preferred and alternative points: preferred_point: {preferred_point}, alternative_point: {alternative_point}")
     
     return preferred_point, alternative_point
+
+
+def get_points_around_middle_point1(zone_details, last_middle_point, redzones, current_bearing):
+    lat = zone_details["lat"]
+    lon = zone_details["lon"]
+    red_zone_radius = zone_details["radius"]
+    
+    initial_dist = red_zone_radius/1.5
+    decrement_step = 10  # Distance decrement step
+    min_dist = 20  # Minimum allowable distance
+    
+    dist = initial_dist
+    while dist >= min_dist:
+        # Calculate points to the right (bearing 90 degrees) and left (bearing 270 degrees) of the middle point
+        point_right = point_with_bearing(lat, lon, red_zone_radius + dist, current_bearing + 90)
+        point_left = point_with_bearing(lat, lon, red_zone_radius + dist, current_bearing - 90)
+        
+        # Check if point_right is clear of red zones
+        path_right = generate_waypoints(last_middle_point, point_right, 0.01)
+        right_clear = path_is_clear_of_red_zones(path_right, redzones)
+        
+        # Check if point_left is clear of red zones
+        path_left = generate_waypoints(last_middle_point, point_left, 0.01)
+        left_clear = path_is_clear_of_red_zones(path_left, redzones)
+        
+        if right_clear and left_clear:
+            return point_right, point_left
+        elif right_clear:
+            point_left_initial = point_with_bearing(lat, lon, red_zone_radius + initial_dist, current_bearing - 90)
+            return point_right, point_left_initial
+        elif left_clear:
+            point_right_initial = point_with_bearing(lat, lon, red_zone_radius + initial_dist, current_bearing + 90)
+            return point_right_initial, point_left
+        
+        dist -= decrement_step
+    
+    # If all distances fail, return the points with the smallest distance checked
+    point_right = point_with_bearing(lat, lon, red_zone_radius + initial_dist, current_bearing + 90)
+    point_left = point_with_bearing(lat, lon, red_zone_radius + initial_dist, current_bearing - 90)
+    
+    return point_right, point_left

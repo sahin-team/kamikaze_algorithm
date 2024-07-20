@@ -16,7 +16,7 @@ def haversine(lat1, lon1, lat2, lon2):
 
 def in_red_zone(lat, lon, redzones):
     for zone in redzones:
-        if haversine(lat, lon, zone["lat"], zone["lon"]) <= (zone["radius"] +20)/ 1000:  # radius in km
+        if haversine(lat, lon, zone["lat"], zone["lon"]) <= (zone["radius"] +30)/ 1000:  # radius in km
             return True
     return False
 

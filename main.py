@@ -1,21 +1,23 @@
 from functions import find_first_red_zone_point, haversine,path_is_clear_of_red_zones,find_middle_red_zone_point, generate_complete_path, generate_waypoints, get_points_around_middle_point, plot_path
-from new_functions import generate_complete_path_updated, get_current_bearing, get_points_around_middle_point2, get_preferred_and_alternative_points, plot_path_with_two_points
+from new_functions import generate_complete_path_updated, get_current_bearing, get_points_around_middle_point1, get_points_around_middle_point2, get_preferred_and_alternative_points, plot_path_with_two_points
 
 # Drone and QR code locations
 # Coordinates of drone and target
 
-# drone_location = {"lat": 40.22997, "lon": 28.99953} problem
+# drone_location = {"lat": 40.22997, "lon": 28.99953} #problem
 # drone_location = {"lat": 40.23008, "lon": 29.00499}
 # drone_location = {"lat": 40.23313, "lon": 29.00429}
 # drone_location = {"lat": 40.22999, "lon": 29.00828}
 # drone_location = {"lat": 40.23064, "lon": 29.00918}
-drone_location = {"lat": 40.23107, "lon": 29.00900}
+# drone_location = {"lat": 40.23107, "lon": 29.00900}
 # drone_location = {"lat": 40.22972, "lon": 29.00894}
 # drone_location = {"lat": 40.23392, "lon": 28.99619}
+drone_location = {"lat": 40.23120, "lon": 29.00003}
 
 
 
-qr_code_location = {"lat": 40.23428, "lon": 29.00027}
+# qr_code_location = {"lat": 40.23428, "lon": 29.00027}
+qr_code_location = {"lat": 40.23008, "lon": 29.00499}
 
 redzones = [
     {"id": 0, "lat": 40.23260922, "lon": 29.00573015, "radius": 50},
@@ -48,8 +50,11 @@ def main():
             print(f"Middle red zone point: {middle_point}\nZone details: {zone_details}")
             current_bearing = get_current_bearing([path[-3], path[-2],path[-1]])
             print(f"Current bearing: {current_bearing}")
-            point_right,point_left = get_points_around_middle_point2(zone_details, zone_details["radius"], redzones,current_bearing)
             
+            if middle_points_list:
+                point_right,point_left = get_points_around_middle_point1(zone_details, middle_points_list[-1], redzones,current_bearing)
+            else:
+                point_right,point_left = get_points_around_middle_point1(zone_details, start, redzones,current_bearing)
             if preferred_point is not None:
                 preferred_point, alternative_point = get_preferred_and_alternative_points(preferred_point, point_right, point_left)
             else:
