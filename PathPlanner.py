@@ -138,10 +138,8 @@ class PathPlanner:
     def optimize_path(self, path: List[Point]) -> List[Point]:
         optimized_path = [path[0]]
         for i in range(1, len(path)-1):
-            curr_point = path[i]
-            if not ObstacleAvoidance.is_point_in_red_zone(curr_point, self.red_zones):
-                continue
-            optimized_path.append(curr_point)
+            if ObstacleAvoidance.path_is_clear_of_red_zones(self.generate_waypoints(optimized_path[-1],path[i+1]), self.red_zones):
+                optimized_path.append(path[i])
         optimized_path.append(path[-1])
         return optimized_path
 

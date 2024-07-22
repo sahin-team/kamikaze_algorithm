@@ -8,7 +8,7 @@ class ObstacleAvoidance:
     @staticmethod
     def is_point_in_red_zone(point: Point, red_zones: List[RedZone]) -> bool:
         for zone in red_zones:
-            if GeographicUtils.haversine(point.lat, point.lon, zone.center.lat, zone.center.lon) <= (zone.radius + 25) / 1000:
+            if GeographicUtils.haversine(point.lat, point.lon, zone.center.lat, zone.center.lon) <= (zone.radius + (zone.radius/7)) / 1000:
                 return True
         return False
 
@@ -23,6 +23,6 @@ class ObstacleAvoidance:
     def find_first_red_zone_point(path: List[Point], red_zones: List[RedZone]) -> Tuple[Point, RedZone]:
         for point in path:
             for zone in red_zones:
-                if GeographicUtils.haversine(point.lat, point.lon, zone.center.lat, zone.center.lon) <= (zone.radius + 25) / 1000:
+                if GeographicUtils.haversine(point.lat, point.lon, zone.center.lat, zone.center.lon) <= (zone.radius + (zone.radius/7)) / 1000:
                     return point, zone
         return None, None
