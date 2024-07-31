@@ -8,8 +8,8 @@ def main():
     # drone_start = Point(40.22997, 28.99953)
     # drone_start = Point(40.23313, 29.00429) #line
     # drone_start = Point(40.23107, 29.00900)
-    drone_start = Point(40.23221, 29.00999)
-    # drone_start = Point(40.23392, 28.99619)
+    # drone_start = Point(40.23221, 29.00999)
+    drone_start = Point(40.23392, 28.99619)
     # drone_start = Point(40.22844,28.99969)  #two points
     # drone_start = Point(40.23187,28.99960) #problem  #two points
     
@@ -25,7 +25,7 @@ def main():
         RedZone(3, 40.23090554, 29.00221109, 170)
     ]
     
-    current_yaw = 90
+    current_yaw = 0
     
     navigator = DroneNavigator(drone_start, qr_code_goal, red_zones, current_yaw)
     final_path = navigator.navigate()
@@ -33,4 +33,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    

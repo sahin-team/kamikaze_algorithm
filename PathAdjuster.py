@@ -7,9 +7,9 @@ from Point import Point
 class PathAdjuster:
     MAX_TURN_ANGLE = 10
     
-    def adjust_initial_path(self, current_yaw: float, path: List[Point], max_turn_angle: float) -> Tuple[List[Point], List[Point]]:
+    def adjust_initial_path(self, current_yaw: float, path: List[Point], max_turn_angle: float) -> Tuple[List[Point], List[Point], bool]:
         if len(path) < 2:
-            return path, path  # Not enough points to adjust
+            return path, path, False  # Not enough points to adjust
 
         initial_bearing = GeographicUtils.calculate_bearing(path[0].lat, path[0].lon, path[1].lat, path[1].lon)
         print(f"Initial bearing: {initial_bearing}")
@@ -21,10 +21,11 @@ class PathAdjuster:
             path_right = self.generate_adjusted_path(path[0], current_yaw, initial_bearing, max_turn_angle, 1)
             path_left = self.generate_adjusted_path(path[0], current_yaw, initial_bearing, max_turn_angle, -1)
             
-            return path_right, path_left
+            return path_right, path_left, True
         else:
             print("Initial path is valid")
-            return [path[0], path[1]], [path[0], path[1]]
+            return [path[0], path[1]], [path[0], path[1]], False
+
 
     def generate_adjusted_path(self, start_point: Point, current_yaw: float, target_bearing: float, 
                                max_turn_angle: float, direction: int) -> List[Point]:

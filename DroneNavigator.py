@@ -1,4 +1,3 @@
-
 from typing import List
 from GeographicUtils import GeographicUtils
 from ObstacleAvoidance import ObstacleAvoidance
@@ -17,6 +16,7 @@ class DroneNavigator:
         self.max_iterations = max_iterations
         self.path_planner = PathPlanner(start, goal, red_zones)
         self.current_yaw = current_yaw
+        self.Max_turn_angle = 7
 
     def generate_path(self,start) -> List[Point]:
         path = self.path_planner.generate_waypoints(start, self.goal)
@@ -85,15 +85,28 @@ class DroneNavigator:
     def navigate(self) -> List[Point]:
         path = self.path_planner.generate_waypoints(self.start, self.goal)
         print(self.current_yaw)
-        adjuster = PathAdjuster()
-        right_turn,left_turn = adjuster.adjust_initial_path(self.current_yaw, path,7)
-        right_path = right_turn + self.generate_path(right_turn[-1])
-        left_path = left_turn + self.generate_path(left_turn[-1])
         
-        if len(right_path) < len(left_path):
-            path = right_path
+        adjuster = PathAdjuster()
+        right_turn, left_turn, adjusted = adjuster.adjust_initial_path(self.current_yaw, path, self.Max_turn_angle)
+        
+        if adjusted:
+            right_path = right_turn + self.generate_path(right_turn[-1])
+            left_path = left_turn + self.generate_path(left_turn[-1])
+
+            # Choose the shortest clear path
+            if len(right_path) < len(left_path) and ObstacleAvoidance.path_is_clear_of_red_zones(right_path, self.red_zones):
+                path = right_path
+            elif ObstacleAvoidance.path_is_clear_of_red_zones(left_path, self.red_zones):
+                path = left_path
+            else:
+                path = right_path if ObstacleAvoidance.path_is_clear_of_red_zones(right_path, self.red_zones) else left_path
         else:
-            path = left_path
-        Visualizer.plot_path(right_path, self.red_zones, self.start, self.goal,left_path)
-                
-        return right_turn
+            path = self.path_planner.generate_path(self.start)
+
+        # Plot paths if adjusted; otherwise, plot the initial path
+        if adjusted:
+            Visualizer.plot_path(right_path, self.red_zones, self.start, self.goal, left_path)
+        
+        Visualizer.plot_path(path, self.red_zones, self.start, self.goal)
+        return path
+
