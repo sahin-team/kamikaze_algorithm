@@ -135,22 +135,3 @@ class PathPlanner:
         alternative_point = point_left if preferred_point == point_right else point_right
         
         return preferred_point, alternative_point
-
-    def optimize_path(self, path: List[Point]) -> List[Point]:
-        optimized_path = [path[0]]
-        for i in range(1, len(path)-1):
-            if ObstacleAvoidance.path_is_clear_of_red_zones(self.generate_waypoints(optimized_path[-1],path[i+1]), self.red_zones):
-                optimized_path.append(path[i])
-        optimized_path.append(path[-1])
-        return optimized_path
-
-    def smooth_path(self, path: List[Point]) -> List[Point]:
-        latitudes = [point.lat for point in path]
-        longitudes = [point.lon for point in path]
-
-        tck, u = splprep([latitudes, longitudes], s=2)
-        u_new = np.linspace(u.min(), u.max(), len(path) * 10)
-        smoothed_coordinates = splev(u_new, tck)
-
-        smoothed_path = [Point(lat, lon) for lat, lon in zip(smoothed_coordinates[0], smoothed_coordinates[1])]
-        return smoothed_path

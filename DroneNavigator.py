@@ -1,4 +1,4 @@
-from typing import List
+from typing import Generator, List
 from GeographicUtils import GeographicUtils
 from ObstacleAvoidance import ObstacleAvoidance
 from PathAdjuster import PathAdjuster
@@ -62,27 +62,13 @@ class DroneNavigator:
             print("================================")
         if path_clear:
             print("Valid path found!")
-            optimized_path = self.path_planner.optimize_path(path)
-            print(f"Path optimized: {len(path)} points reduced to {len(optimized_path)} points")
-            smoothed_path = self.path_planner.smooth_path(path)
-            print("Path smoothed")
-            
-            # Visualizer.plot_path(smoothed_path, self.red_zones, self.start, self.goal)
-            # Visualizer.plot_path(optimized_path, self.red_zones, self.start, self.goal)
-            # Visualizer.plot_path(path, self.red_zones, self.start, self.goal, self.middle_points_list)
-            if ObstacleAvoidance.path_is_clear_of_red_zones(smoothed_path, self.red_zones):
-                print("Smoothed path is clear of red zones")
-                return path
-            else:
-                print("Smoothed path intersects red zones, using optimized path")
-                return path
-            
-           
+            return path
+        
         else:
             print("Could not find a clear path within the maximum number of iterations")
             return path
 
-    def navigate(self) -> List[Point]:
+    def adjust_path(self) -> Generator[Point, None, None]:
         path = self.path_planner.generate_waypoints(self.start, self.goal)
         print(self.current_yaw)
         
@@ -101,12 +87,17 @@ class DroneNavigator:
             else:
                 path = right_path if ObstacleAvoidance.path_is_clear_of_red_zones(right_path, self.red_zones) else left_path
         else:
-            path = self.path_planner.generate_path(self.start)
+            path = self.generate_path(self.start)
 
         # Plot paths if adjusted; otherwise, plot the initial path
-        if adjusted:
-            Visualizer.plot_path(right_path, self.red_zones, self.start, self.goal, left_path)
+        # if adjusted:
+        #     Visualizer.plot_path(right_path, self.red_zones, self.start, self.goal, left_path)
         
-        Visualizer.plot_path(path, self.red_zones, self.start, self.goal)
-        return path
+        # Visualizer.plot_path(path, self.red_zones, self.start, self.goal)
+        
+        for point in path:
+            yield point
+            
+    def navigate(self) -> Generator[Point, None, None]:
+        yield from self.adjust_path()
 

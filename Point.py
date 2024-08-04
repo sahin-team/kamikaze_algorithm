@@ -10,4 +10,4 @@ class Point:
         return (self.lat, self.lon)
     
     def print_point(self):
-        print(f"lat: {self.lat} - lon: {self.lon}")
+        return (f"lat: {self.lat} - lon: {self.lon}")

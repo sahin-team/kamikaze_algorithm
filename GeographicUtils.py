@@ -92,3 +92,19 @@ class GeographicUtils:
         new_lon = (new_lon + 540) % 360 - 180
 
         return new_lat, new_lon
+    
+    @staticmethod
+    def calc_yaw_diff(yaw1: float, yaw2: float) -> float:
+        """
+        Calculate the difference between two yaw angles.
+        
+        :param yaw1: First yaw angle in degrees
+        :param yaw2: Second yaw angle in degrees
+        :return: Difference between the two yaw angles in degrees
+        """
+        diff = yaw2 - yaw1
+        while diff > 180:
+            diff -= 360
+        while diff < -180:
+            diff += 360
+        return diff

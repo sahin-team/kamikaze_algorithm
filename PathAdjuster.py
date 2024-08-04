@@ -14,7 +14,7 @@ class PathAdjuster:
         initial_bearing = GeographicUtils.calculate_bearing(path[0].lat, path[0].lon, path[1].lat, path[1].lon)
         print(f"Initial bearing: {initial_bearing}")
         
-        yaw_diff = self.calculate_yaw_difference(current_yaw, initial_bearing)
+        yaw_diff = GeographicUtils.calc_yaw_diff(current_yaw, initial_bearing)
 
         if abs(yaw_diff) > max_turn_angle:
             print("Adjusting initial path...")
@@ -32,7 +32,7 @@ class PathAdjuster:
         path = [start_point]
         current_bearing = current_yaw
 
-        while abs(self.calculate_yaw_difference(current_bearing, target_bearing)) > max_turn_angle:
+        while abs(GeographicUtils.calc_yaw_diff(current_bearing, target_bearing)) > max_turn_angle:
             current_bearing = (current_bearing + direction * max_turn_angle) % 360
             new_point = self.calculate_new_point(path[-1], current_bearing)
             path.append(new_point)
@@ -42,10 +42,6 @@ class PathAdjuster:
         path.append(final_point)
 
         return path
-
-    def calculate_yaw_difference(self, current_yaw: float, target_bearing: float) -> float:
-        diff = target_bearing - current_yaw
-        return (diff + 180) % 360 - 180
 
     def calculate_new_point(self, start: Point, bearing: float) -> Point:
         # This method should calculate a new point at a fixed distance in the given bearing
