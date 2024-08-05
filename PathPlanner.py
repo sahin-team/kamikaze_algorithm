@@ -4,8 +4,7 @@ import numpy as np
 
 from GeographicUtils import GeographicUtils
 from ObstacleAvoidance import ObstacleAvoidance
-from Point import Point
-from RedZone import RedZone
+from Point import Point,RedZone
 from Visualizer import Visualizer
 
 

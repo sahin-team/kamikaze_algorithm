@@ -2,8 +2,7 @@ from typing import Generator, List
 from GeographicUtils import GeographicUtils
 from ObstacleAvoidance import ObstacleAvoidance
 from PathAdjuster import PathAdjuster
-from Point import Point
-from RedZone import RedZone
+from Point import Point,RedZone
 from Visualizer import Visualizer
 from PathPlanner import PathPlanner
 
@@ -68,7 +67,7 @@ class DroneNavigator:
             print("Could not find a clear path within the maximum number of iterations")
             return path
 
-    def adjust_path(self) -> Generator[Point, None, None]:
+    def navigate(self) -> Generator[Point, None, None]:
         path = self.path_planner.generate_waypoints(self.start, self.goal)
         print(self.current_yaw)
         
@@ -98,6 +97,4 @@ class DroneNavigator:
         for point in path:
             yield point
             
-    def navigate(self) -> Generator[Point, None, None]:
-        yield from self.adjust_path()
 

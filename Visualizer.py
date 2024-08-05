@@ -3,8 +3,7 @@ from matplotlib import pyplot as plt
 from matplotlib.patches import Circle
 
 from GeographicUtils import GeographicUtils
-from Point import Point
-from RedZone import RedZone
+from Point import Point,RedZone
 
 class Visualizer:
     @staticmethod

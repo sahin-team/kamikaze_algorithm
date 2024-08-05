@@ -1,7 +1,5 @@
-from typing import Generator, List
 from DroneNavigator import DroneNavigator
-from Point import Point
-from RedZone import RedZone
+from Point import Point,RedZone
 
 
 
@@ -21,10 +19,10 @@ def main():
     # qr_code_goal = Point(40.23473,29.00398)
 
     red_zones = [
-        RedZone(0, 40.23260922, 29.00573015, 50),
-        RedZone(1, 40.23351019, 28.99976492, 50),
-        RedZone(2, 40.23105297, 29.00744677, 75),
-        RedZone(3, 40.23090554, 29.00221109, 170)
+        RedZone(0, Point(40.23260922, 29.00573015), 50),
+        RedZone(1, Point(40.23351019, 28.99976492), 50),
+        RedZone(2, Point(40.23105297, 29.00744677), 75),
+        RedZone(3, Point(40.23090554, 29.00221109), 170)
     ]
     
     current_yaw = 0
@@ -32,7 +30,7 @@ def main():
     navigator = DroneNavigator(drone_start, qr_code_goal, red_zones, current_yaw)
         
     for point in navigator.navigate():
-        print(f"Next point: {point.print_point()}")
+        print(f"Next point: {point}")
 
 
 if __name__ == "__main__":

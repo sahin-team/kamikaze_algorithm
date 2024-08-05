@@ -1,7 +1,6 @@
 from typing import List, Tuple
 from GeographicUtils import GeographicUtils
-from Point import Point
-from RedZone import RedZone
+from Point import Point,RedZone
 
 
 class ObstacleAvoidance:
