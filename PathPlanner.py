@@ -9,24 +9,22 @@ from Visualizer import Visualizer
 
 
 class PathPlanner:
-    def __init__(self, start: Point, goal: Point, red_zones: List[RedZone], step_size_km: float = 0.01):
+    def __init__(self, start: Point, goal: Point, red_zones: List[RedZone],boundary_points:List[Point], step_size_km: float = 0.01):
         self.start = start
         self.goal = goal
         self.red_zones = red_zones
         self.step_size_km = step_size_km
+        self.obstacle_avoidance = ObstacleAvoidance(red_zones,boundary_points)
 
     def generate_waypoints(self, start: Point, goal: Point) -> List[Point]:
         waypoints = [start]
         current_location = start
         
-        while GeographicUtils.haversine(current_location.lat, current_location.lon, goal.lat, goal.lon) > self.step_size_km:
-            lat1, lon1 = current_location.lat, current_location.lon
-            lat2, lon2 = goal.lat, goal.lon
+        while GeographicUtils.haversine(current_location, goal) > self.step_size_km:
             
-            bearing = GeographicUtils.calculate_bearing(lat1, lon1, lat2, lon2)
-            new_lat, new_lon = GeographicUtils.point_with_bearing(lat1, lon1, self.step_size_km * 1000, bearing)
+            bearing = GeographicUtils.calculate_bearing(current_location, goal)
+            current_location = GeographicUtils.point_with_bearing(current_location, self.step_size_km * 1000, bearing)
             
-            current_location = Point(new_lat, new_lon)
             waypoints.append(current_location)
             
         waypoints.append(goal)
@@ -43,7 +41,7 @@ class PathPlanner:
             closest_point = None
             shortest_distance = float('inf')
             for point in points:
-                distance = GeographicUtils.haversine(current_loc.lat, current_loc.lon, point.lat, point.lon)
+                distance = GeographicUtils.haversine(current_loc, point)
                 if distance < shortest_distance:
                     shortest_distance = distance
                     closest_point = point
@@ -63,7 +61,7 @@ class PathPlanner:
             # Update the current location
             current_location = closest_point
         
-        if not ObstacleAvoidance.path_is_clear_of_red_zones(complete_path, self.red_zones):
+        if not self.obstacle_avoidance.path_is_clear_of_red_zones(complete_path):
             last_middle_point_index = len(complete_path)
         else:
             last_middle_point_index = None
@@ -77,7 +75,6 @@ class PathPlanner:
         return complete_path, last_middle_point_index
     
     def get_points_around_middle_point(self, zone_details: RedZone, last_middle_point: Point, current_bearing: float) -> Tuple[Point, Point]:
-        lat, lon = zone_details.center.lat, zone_details.center.lon
         red_zone_radius = zone_details.radius
         
         initial_dist = 10 + zone_details.radius / 1.5
@@ -85,50 +82,47 @@ class PathPlanner:
         min_dist = 20  # Minimum allowable distance
         
         dist = initial_dist
-        point_right_initial = GeographicUtils.point_with_bearing(lat, lon, red_zone_radius + initial_dist, current_bearing + 90)
-        point_left_initial = GeographicUtils.point_with_bearing(lat, lon, red_zone_radius + initial_dist, current_bearing - 90)
-        
-        point_right_initial = Point(point_right_initial[0], point_right_initial[1])
-        point_left_initial = Point(point_left_initial[0], point_left_initial[1])
+        point_right_initial = GeographicUtils.point_with_bearing(zone_details.center, red_zone_radius + initial_dist, current_bearing + 90)
+        point_left_initial = GeographicUtils.point_with_bearing(zone_details.center, red_zone_radius + initial_dist, current_bearing - 90)
         
         right_clear = False
         left_clear = False
 
         while dist >= min_dist:
             if not right_clear:
-                point_right = GeographicUtils.point_with_bearing(lat, lon, red_zone_radius + dist, current_bearing + 90)
-                point_right = Point(point_right[0], point_right[1])
+                point_right = GeographicUtils.point_with_bearing(zone_details.center, red_zone_radius + dist, current_bearing + 90)
                 path_right = self.generate_waypoints(last_middle_point, point_right)
-                right_clear = ObstacleAvoidance.path_is_clear_of_red_zones(path_right, self.red_zones)
+                right_clear = self.obstacle_avoidance.is_path_valid(path_right)
             
             if not left_clear:
-                point_left = GeographicUtils.point_with_bearing(lat, lon, red_zone_radius + dist, current_bearing - 90)
-                point_left = Point(point_left[0], point_left[1])
+                point_left = GeographicUtils.point_with_bearing(zone_details.center, red_zone_radius + dist, current_bearing - 90)
                 path_left = self.generate_waypoints(last_middle_point, point_left)
-                left_clear = ObstacleAvoidance.path_is_clear_of_red_zones(path_left, self.red_zones)
+                left_clear = self.obstacle_avoidance.is_path_valid(path_left)
 
             if right_clear and left_clear:
                 return point_right, point_left
-            elif right_clear and not left_clear:
-                dist -= decrement_step
-                continue
-            elif left_clear and not right_clear:
-                dist -= decrement_step
-                continue
             
             dist -= decrement_step
         
         # If all distances fail, return the points with the smallest distance checked
         if not right_clear:
             point_right = point_right_initial
+            print("Right point not clear given the initial distance{}".format(initial_dist))
         if not left_clear:
             point_left = point_left_initial
+            print("Left point not clear given the initial distance{}".format(initial_dist))
         
         return point_right, point_left
     
     def get_preferred_and_alternative_points(self, reference_point: Point, point_right: Point, point_left: Point) -> Tuple[Point, Point]:
-        distance_to_right = GeographicUtils.haversine(reference_point.lat, reference_point.lon, point_right.lat, point_right.lon)
-        distance_to_left = GeographicUtils.haversine(reference_point.lat, reference_point.lon, point_left.lat, point_left.lon)
+        
+        if not self.obstacle_avoidance.is_point_valid(point_right):
+            return point_left, point_left
+        if not self.obstacle_avoidance.is_point_valid(point_left):
+            return point_right, point_right
+        
+        distance_to_right = GeographicUtils.haversine(reference_point, point_right)
+        distance_to_left = GeographicUtils.haversine(reference_point, point_left)
         
         preferred_point = point_right if distance_to_right <= distance_to_left else point_left
         alternative_point = point_left if preferred_point == point_right else point_right

@@ -11,7 +11,7 @@ class PathAdjuster:
         if len(path) < 2:
             return path, path, False  # Not enough points to adjust
 
-        initial_bearing = GeographicUtils.calculate_bearing(path[0].lat, path[0].lon, path[1].lat, path[1].lon)
+        initial_bearing = GeographicUtils.calculate_bearing(path[0], path[1])
         print(f"Initial bearing: {initial_bearing}")
         
         yaw_diff = GeographicUtils.calc_yaw_diff(current_yaw, initial_bearing)

@@ -43,13 +43,15 @@ class Visualizer:
         ax.set_ylim(min_lat - lat_buffer, max_lat + lat_buffer)
     
     @staticmethod
-    def plot_path(path: List[Point], red_zones: List[RedZone], start: Point, goal: Point, middle_points: List[Point] = None):
+    def plot_path(path: List[Point], red_zones: List[RedZone], start: Point, goal: Point, middle_points: List[Point] = None,boundary_points:List[Point] = None):
         fig, ax = plt.subplots()
         
         Visualizer.plot_red_zones(ax, red_zones)
         Visualizer.plot_points(ax, start, goal, path)
         if middle_points:
             Visualizer.plot_middle_points(ax, middle_points)
+        if boundary_points:
+            Visualizer.plot_middle_points(ax, boundary_points)
         Visualizer.set_plot_bounds(ax, red_zones)
 
         ax.set_xlabel("lon")

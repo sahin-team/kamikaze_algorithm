@@ -1,15 +1,17 @@
 import math
 from typing import Tuple
 
+from Point import Point
+
 
 class GeographicUtils:
     R = 6371  # Radius of the Earth in km
     @staticmethod
-    def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    def haversine(point1: Point, point2: Point) -> float:
         R = 6371  # Radius of the Earth in km
-        dlat = math.radians(lat2 - lat1)
-        dlon = math.radians(lon2 - lon1)
-        a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
+        dlat = math.radians(point2.lat - point1.lat)
+        dlon = math.radians(point2.lon - point1.lon)
+        a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(point1.lat)) * math.cos(math.radians(point2.lat)) * math.sin(dlon / 2) ** 2
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
         distance = R * c
         return distance
@@ -19,11 +21,11 @@ class GeographicUtils:
         return meters / 111000, meters / (111000 * math.cos(math.radians(lat)))
 
     @staticmethod
-    def point_with_bearing(lat: float, lon: float, distance: float, bearing: float) -> Tuple[float, float]:
+    def point_with_bearing(point: Point, distance: float, bearing: float) -> Point:
         R = 6378137  # Radius of the Earth in meters
         bearing_rad = math.radians(bearing)
-        lat_rad = math.radians(lat)
-        lon_rad = math.radians(lon)
+        lat_rad = math.radians(point.lat)
+        lon_rad = math.radians(point.lon)
 
         new_lat_rad = math.asin(math.sin(lat_rad) * math.cos(distance / R) +
                                 math.cos(lat_rad) * math.sin(distance / R) * math.cos(bearing_rad))
@@ -34,14 +36,14 @@ class GeographicUtils:
         new_lat = math.degrees(new_lat_rad)
         new_lon = math.degrees(new_lon_rad)
 
-        return new_lat, new_lon
+        return Point(new_lat,new_lon)
 
     @staticmethod
-    def calculate_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-        lat1_rad = math.radians(lat1)
-        lon1_rad = math.radians(lon1)
-        lat2_rad = math.radians(lat2)
-        lon2_rad = math.radians(lon2)
+    def calculate_bearing(point1: Point, point2: Point) -> float:
+        lat1_rad = math.radians(point1.lat)
+        lon1_rad = math.radians(point1.lon)
+        lat2_rad = math.radians(point2.lat)
+        lon2_rad = math.radians(point2.lon)
 
         dlon_rad = lon2_rad - lon1_rad
 

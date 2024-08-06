@@ -8,18 +8,20 @@ from PathPlanner import PathPlanner
 
 
 class DroneNavigator:
-    def __init__(self, start: Point, goal: Point, red_zones: List[RedZone], current_yaw : float, max_iterations: int = 2):
+    def __init__(self, start: Point, goal: Point, red_zones: List[RedZone], current_yaw : float,boundary_points:List[Point], max_iterations: int = 3) -> None:
         self.start = start
         self.goal = goal
         self.red_zones = red_zones
         self.max_iterations = max_iterations
-        self.path_planner = PathPlanner(start, goal, red_zones)
+        self.path_planner = PathPlanner(start, goal, red_zones,boundary_points)
+        self.obstacle_avoidance = ObstacleAvoidance(red_zones, boundary_points)
         self.current_yaw = current_yaw
         self.Max_turn_angle = 7
+        self.boundary_points = boundary_points
 
     def generate_path(self,start) -> List[Point]:
         path = self.path_planner.generate_waypoints(start, self.goal)
-        path_clear = ObstacleAvoidance.path_is_clear_of_red_zones(path, self.red_zones)
+        path_clear = self.obstacle_avoidance.path_is_clear_of_red_zones(path)
         iteration = 0
         self.middle_points_list = []
         preferred_point,alternative_point = None,None
@@ -28,13 +30,13 @@ class DroneNavigator:
 
         while not path_clear and iteration < self.max_iterations:
             # Implement obstacle avoidance logic here
-            self.middle_point, zone_details = ObstacleAvoidance.find_first_red_zone_point(path, self.red_zones)
+            _, zone_details = self.obstacle_avoidance.find_first_red_zone_point(path)
             
-            print(f"Middle red zone point: {self.middle_point.lat,self.middle_point.lon}\nZone details: {zone_details.radius,zone_details.center.lat,zone_details.center.lon}")
+            print(f"Zone details: {zone_details.radius,zone_details.center.lat,zone_details.center.lon}")
             
             
             last_idx = last_middle_point_index - 2 if last_middle_point_index else -2
-            current_bearing = GeographicUtils.calculate_bearing(path[last_idx].lat, path[last_idx].lon, path[last_idx + 1].lat, path[last_idx + 1].lon)
+            current_bearing = GeographicUtils.calculate_bearing(path[last_idx], path[last_idx + 1])
             print(f"Current bearing: {current_bearing}")
             
                         
@@ -49,7 +51,7 @@ class DroneNavigator:
             
             for point in [preferred_point, alternative_point, preferred_point]:
                 path, last_middle_point_index = self.path_planner.generate_complete_path_updated(start, [point] + self.middle_points_list, self.goal)
-                path_clear = ObstacleAvoidance.path_is_clear_of_red_zones(path, self.red_zones)
+                path_clear = self.obstacle_avoidance.path_is_clear_of_red_zones(path)
                 if path_clear:
                     break
             
@@ -79,22 +81,30 @@ class DroneNavigator:
             left_path = left_turn + self.generate_path(left_turn[-1])
 
             # Choose the shortest clear path
-            if len(right_path) < len(left_path) and ObstacleAvoidance.path_is_clear_of_red_zones(right_path, self.red_zones):
+            if len(right_path) < len(left_path) and self.obstacle_avoidance.path_is_clear_of_red_zones(right_path):
                 path = right_path
-            elif ObstacleAvoidance.path_is_clear_of_red_zones(left_path, self.red_zones):
+            elif self.obstacle_avoidance.path_is_clear_of_red_zones(left_path):
                 path = left_path
             else:
-                path = right_path if ObstacleAvoidance.path_is_clear_of_red_zones(right_path, self.red_zones) else left_path
+                path = right_path if self.obstacle_avoidance.path_is_clear_of_red_zones(right_path) else left_path
         else:
             path = self.generate_path(self.start)
 
         # Plot paths if adjusted; otherwise, plot the initial path
-        # if adjusted:
-        #     Visualizer.plot_path(right_path, self.red_zones, self.start, self.goal, left_path)
+        if adjusted:
+            Visualizer.plot_path(right_path, self.red_zones, self.start, self.goal, left_path)
         
-        # Visualizer.plot_path(path, self.red_zones, self.start, self.goal)
         
+        
+        # if not self.obstacle_avoidance.is_path_valid(path):
+        #     print(f"path is not valid: ")
+        
+        
+        Visualizer.plot_path(path, self.red_zones, self.start, self.goal, self.middle_points_list,self.boundary_points)
+        
+        print(self.obstacle_avoidance.is_point_valid(self.start))
         for point in path:
             yield point
+            
             
 
