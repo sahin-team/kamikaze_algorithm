@@ -1,4 +1,4 @@
-from typing import Generator, List
+from typing import Generator, List,Tuple
 from GeographicUtils import GeographicUtils
 from ObstacleAvoidance import ObstacleAvoidance
 from PathAdjuster import PathAdjuster
@@ -19,11 +19,11 @@ class DroneNavigator:
         self.Max_turn_angle = 7
         self.boundary_points = boundary_points
 
-    def generate_path(self,start) -> List[Point]:
+    def generate_path(self,start) -> Tuple[List[Point],List[Point]]:
         path = self.path_planner.generate_waypoints(start, self.goal)
         path_clear = self.obstacle_avoidance.path_is_clear_of_red_zones(path)
         iteration = 0
-        self.middle_points_list = []
+        middle_points_list = []
         preferred_point,alternative_point = None,None
         last_middle_point_index = None
         
@@ -40,7 +40,7 @@ class DroneNavigator:
             print(f"Current bearing: {current_bearing}")
             
                         
-            target_point = self.middle_points_list[-1] if self.middle_points_list else self.goal
+            target_point = middle_points_list[-1] if middle_points_list else self.goal
             point_right, point_left = self.path_planner.get_points_around_middle_point(zone_details, target_point, current_bearing)
             print(f"Point right: {point_right.lat, point_right.lon} - Point left: {point_left.lat, point_left.lon}")
             
@@ -50,24 +50,24 @@ class DroneNavigator:
             print(f"Preferred point: {preferred_point.lat,preferred_point.lon} - Alternative point: {alternative_point.lat,alternative_point.lon}")
             
             for point in [preferred_point, alternative_point, preferred_point]:
-                path, last_middle_point_index = self.path_planner.generate_complete_path_updated(start, [point] + self.middle_points_list, self.goal)
+                path, last_middle_point_index = self.path_planner.generate_complete_path_updated(start, [point] + middle_points_list, self.goal)
                 path_clear = self.obstacle_avoidance.path_is_clear_of_red_zones(path)
                 if path_clear:
                     break
             
-            self.middle_points_list.append(preferred_point)
-            print(f"Middle points list: {[(point.lat,point.lon) for point in self.middle_points_list]}")
+            middle_points_list.append(preferred_point)
+            print(f"Middle points list: {[(point.lat,point.lon) for point in middle_points_list]}")
                 
                 
             iteration += 1
             print("================================")
         if path_clear:
             print("Valid path found!")
-            return path
+            return path,middle_points_list
         
         else:
             print("Could not find a clear path within the maximum number of iterations")
-            return path
+            return path,middle_points_list
 
     def navigate(self) -> Generator[Point, None, None]:
         path = self.path_planner.generate_waypoints(self.start, self.goal)
@@ -75,24 +75,34 @@ class DroneNavigator:
         
         adjuster = PathAdjuster()
         right_turn, left_turn, adjusted = adjuster.adjust_initial_path(self.current_yaw, path, self.Max_turn_angle)
-        
+
         if adjusted:
-            right_path = right_turn + self.generate_path(right_turn[-1])
-            left_path = left_turn + self.generate_path(left_turn[-1])
+            # Generate paths after the initial adjustments
+            right_path, right_middle_points = self.generate_path(right_turn[-1])
+            left_path, left_middle_points = self.generate_path(left_turn[-1])
+            
+            # Combine initial turns with the generated paths
+            full_right_path = right_turn + right_path
+            full_left_path = left_turn + left_path
 
             # Choose the shortest clear path
-            if len(right_path) < len(left_path) and self.obstacle_avoidance.path_is_clear_of_red_zones(right_path):
-                path = right_path
-            elif self.obstacle_avoidance.path_is_clear_of_red_zones(left_path):
-                path = left_path
+            if len(full_right_path) < len(full_left_path) and self.obstacle_avoidance.path_is_clear_of_red_zones(full_right_path):
+                path,middle_points = full_right_path,right_middle_points
+            elif self.obstacle_avoidance.path_is_clear_of_red_zones(full_left_path):
+                path,middle_points = full_left_path,left_middle_points
             else:
-                path = right_path if self.obstacle_avoidance.path_is_clear_of_red_zones(right_path) else left_path
+                path = full_right_path if self.obstacle_avoidance.path_is_clear_of_red_zones(full_right_path) else full_left_path
+                middle_points = right_middle_points if self.obstacle_avoidance.path_is_clear_of_red_zones(full_right_path) else left_middle_points
         else:
-            path = self.generate_path(self.start)
+            path, middle_points = self.generate_path(self.start)
+
+        # Adjust the distance between waypoints while preserving middle points
+        path = GeographicUtils.increase_distance(path, middle_points,10)
+    
 
         # Plot paths if adjusted; otherwise, plot the initial path
-        if adjusted:
-            Visualizer.plot_path(right_path, self.red_zones, self.start, self.goal, left_path)
+        # if adjusted:
+        #     Visualizer.plot_path(right_path, self.red_zones, self.start, self.goal, left_path)
         
         
         
@@ -100,7 +110,7 @@ class DroneNavigator:
         #     print(f"path is not valid: ")
         
         
-        Visualizer.plot_path(path, self.red_zones, self.start, self.goal, self.middle_points_list,self.boundary_points)
+        Visualizer.plot_path(path, self.red_zones, self.start, self.goal,self.boundary_points)
         
         print(self.obstacle_avoidance.is_point_valid(self.start))
         for point in path:

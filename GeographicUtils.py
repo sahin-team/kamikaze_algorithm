@@ -1,19 +1,19 @@
 import math
-from typing import Tuple
+from typing import List, Set, Tuple
 
 from Point import Point
 
+EARTH_RADIUS_KM = 6371  # Radius of the Earth in km
+EARTH_RADIUS_M = 6371000  # Radius of the Earth in meters
 
 class GeographicUtils:
-    R = 6371  # Radius of the Earth in km
     @staticmethod
     def haversine(point1: Point, point2: Point) -> float:
-        R = 6371  # Radius of the Earth in km
         dlat = math.radians(point2.lat - point1.lat)
         dlon = math.radians(point2.lon - point1.lon)
         a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(point1.lat)) * math.cos(math.radians(point2.lat)) * math.sin(dlon / 2) ** 2
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-        distance = R * c
+        distance = EARTH_RADIUS_KM * c
         return distance
 
     @staticmethod
@@ -22,16 +22,15 @@ class GeographicUtils:
 
     @staticmethod
     def point_with_bearing(point: Point, distance: float, bearing: float) -> Point:
-        R = 6378137  # Radius of the Earth in meters
         bearing_rad = math.radians(bearing)
         lat_rad = math.radians(point.lat)
         lon_rad = math.radians(point.lon)
 
-        new_lat_rad = math.asin(math.sin(lat_rad) * math.cos(distance / R) +
-                                math.cos(lat_rad) * math.sin(distance / R) * math.cos(bearing_rad))
+        new_lat_rad = math.asin(math.sin(lat_rad) * math.cos(distance / EARTH_RADIUS_M) +
+                                math.cos(lat_rad) * math.sin(distance / EARTH_RADIUS_M) * math.cos(bearing_rad))
 
-        new_lon_rad = lon_rad + math.atan2(math.sin(bearing_rad) * math.sin(distance / R) * math.cos(lat_rad),
-                                           math.cos(distance / R) - math.sin(lat_rad) * math.sin(new_lat_rad))
+        new_lon_rad = lon_rad + math.atan2(math.sin(bearing_rad) * math.sin(distance / EARTH_RADIUS_M) * math.cos(lat_rad),
+                                           math.cos(distance / EARTH_RADIUS_M) - math.sin(lat_rad) * math.sin(new_lat_rad))
 
         new_lat = math.degrees(new_lat_rad)
         new_lon = math.degrees(new_lon_rad)
@@ -72,7 +71,7 @@ class GeographicUtils:
         bearing_rad = math.radians(bearing)
 
         # Calculate angular distance
-        angular_distance = distance / GeographicUtils.R
+        angular_distance = distance / EARTH_RADIUS_KM
 
         # Calculate new latitude
         new_lat_rad = math.asin(
@@ -110,3 +109,26 @@ class GeographicUtils:
         while diff < -180:
             diff += 360
         return diff
+    
+    @staticmethod
+    def increase_distance(points: List[Point], middle_points: Set[Point], keep_every_nth: int) -> List[Point]:
+        """
+        Process a list of points, keeping all middle points, every nth point, and the last point.
+
+        Args:
+            points (List[Point]): The list of points to process.
+            middle_points (Set[Point]): Set of points to always keep.
+            keep_every_nth (int): Keep every nth point (n = keep_every_nth).
+
+        Returns:
+            List[Point]: The processed list of points.
+        """
+        if keep_every_nth < 1:
+            raise ValueError("keep_every_nth must be a positive integer")
+
+        result = []
+        for i, point in enumerate(points):
+            if point in middle_points or i % keep_every_nth == 0 or i == len(points) - 1:
+                result.append(point)
+        
+        return result

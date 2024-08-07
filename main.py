@@ -14,8 +14,8 @@ def main():
     # drone_start = Point(40.23187,28.99960) #problem  #two points
     
     
-    qr_code_goal = Point(40.23008, 29.00499)
-    # qr_code_goal = Point(40.23457, 29.00155)
+    # qr_code_goal = Point(40.23008, 29.00499)
+    qr_code_goal = Point(40.23457, 29.00155)
     # qr_code_goal = Point(40.23473,29.00398)
 
     red_zones = [
@@ -25,7 +25,7 @@ def main():
         RedZone(3, Point(40.23090554, 29.00221109), 170)
     ]
     
-    current_yaw = 0
+    current_yaw = 180
     
     boundary_points = [
     Point(40.22850, 28.99750),  # Larger bottom-left
